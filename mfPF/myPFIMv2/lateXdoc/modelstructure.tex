@@ -1,0 +1,70 @@
+\section{Model list 'structure'}
+
+Example given in model.defaultDEjac3 (that is the most complex so far\dots)
+
+\begin{verbatim}
+model.defaultDEjac3 <- function() {
+
+	default <- list()
+	default$PFIMmodel <- myDEJfunc3 # name of the ODE function (see below)
+	default$Type <- 'DE'
+
+	# dosis per arm - first a vector of times then a vector of doses
+	default$dosing <- list(cbind(c(0,12,24),c(5*70/0.15,10*70/0.15,10*70/0.15)))
+
+	default$parArmsIC <- list(expression(c(0, RateT*V/CLT))) # similar to PFIM
+
+	# For the fast computation of sensitivities:
+	# Partial derivative of ICs wrt parameters - given per arm
+	default$JacIC=list(expression(c(0,0, 0,RateT/CLT, 0,0, 
+	                                     0,-RateT*V/CLT^2, 0,0, 0,V/CLT)))
+	# Partial derivative function for observations
+	# (if not all states are observed)
+	default$JacObs=TRUE
+
+	# Specification of model parameters, values and variances
+	default$parModelName <- c("Kd","V","CLD","CLT","CLC","RateT")
+	default$parModel <- c(350,6,0.2,1,0.4,40)
+	default$parModelVar <- c(0.05,0.30,0.2,0.25,0.25,0.50)
+	default$parModelVarType <- 'exp'
+
+	# Specification of observations and add/prop error
+	default$parObsName <- c('TotDrug','TotTarget','Complex')
+	default$parObsErr <- list(c(0,0.2), c(0,0.1), c(0.1,0.25))
+
+	# Times of observation per arm and observation
+	default$parObsTimes <- list(
+	    c(10/60/24,1/24,6/24,0.5, 2, 4, 7, 14, 21, 35, 49, 63, 77, 91),
+	    c(10/60/24, 7, 35, 77, 91),
+	    c(0.5, 2, 4, 7, 14, 21, 35, 49, 63, 77, 91))
+
+	# Currently I need a 'dummy' arm - this should be changed soon
+	default$parArmsName <- c('dummy')
+	default$parArms  <- list(c(0))
+	default$ArmsName <- list('TMDD model')
+
+	# For plotting routine
+	default$TimeName <- 'time (hr)'
+	default$tRange <- c(0,111)
+
+	# Empty...
+	default$mpOpt <- list()
+
+	# To derive PFIM in the end multiply PFIM from protocol with Nr subjects
+	default$subjects <- c(100)
+
+	# Return value: example structure
+	return(default)
+}
+
+# ODE function definition
+myDEJfunc3<-function(t, y, p, parArms, mpOpt){
+	...
+
+	# If only the 2 initial vectors are present then numerical sensitivities
+	# get calculated. If JacState and JacParam are provided then it is assumed
+	# that the two states (with derivatives dTD and dTT) are observed.
+	# Otherwise one also needs the partial derivative of observations w.r.t. states.
+	return(list(c(dTD,dTT), c(TD,TT, C), JacState, JacParam, JacObsParam, JacObsState))
+}
+\end{verbatim}

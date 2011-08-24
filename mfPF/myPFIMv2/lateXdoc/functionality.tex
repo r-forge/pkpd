@@ -1,0 +1,70 @@
+\section{Overview of current status and functionality}
+The code base provided does include part of the functionality of PFIM but not all.
+On the other hand it also has additional features that come in handy.
+
+The current status is that the code was written with the idea in mind to convert it into an R-package, but without having done all the necessary documentation, etc., i.e., it is code in development -- and if there would not have been the collaboration with Doug it still would have stayed a small project with slow, but steady progress.
+
+\subsection{General program functionality}
+The normal execution (using the main functions) would be as follows:
+Read in all the functions from the R-subfolder.
+Then use the specific functions to get to the final results\dots
+
+\begin{description}
+\item[model.readPFIM] reads in an example using the original PFIM structure
+\item[model.defaultXYZ] reads in a predefined example based on my new model structure
+\item[model.define] creates the model structure based on user input or an example provided from model.readPFIM or model.defaultXYZ
+\item[model.plot] plots the solution (or the sensitivities) of the provided model based on the given arms, doses, samples, etc. - equivalent to the ''initial design''
+\item[model.solve] wrapper for model.solveAE and model.solveDE for plain solution of the model based on algebraic equation or differential equations\\
+This function is in general not called by the user, but by model.plot or model.sens
+\item[model.sens] wrapper for model.solveAE, model.sensNum, and model.sensJac. The first includes the possibility to derive the sensitivities from a parsed model (as PFIM). model.sensNum derives the partial derivatives numerically using the Jacobian-function. model.sensJac solves a system of ODEs that simultaneously derives the ODE solution and its partial derivative (huge speedup).
+\item[model.fish] contains for-loop for the different arms and calls model.fish.bloc to actually derive the PFIM for a specific given protocol
+\item[model.out.det\_rse] derives the standard PFIM output for a given population fisher information matrix
+\end{description}
+
+In the tests-subfolder there are three files to test specific parts of the program
+\begin{description}
+\item[run.testSens] compares the three different ways to obtain the sensitivities (Hessian as in PFIM, Jacobian, or in parallel with ODEs)
+\item[run.testFishBloc] code to test subparts of the PFIM calculation to see e.g., if  \verb!sum(diag(A %*% B)) == sum(A * B)! for symmetric matrices\dots
+\item[run.testVsPFIM] compares the performance and outcomes of myPFIMv2 with PFIM based on PFIM examples
+\end{description}
+
+\subsection{Possibilities to specify a model}
+Currently the models can be defined either using my own structure (with a bit of a user-friendly interface) or one can read in a PFIM model specification.
+
+One can specify the model equations
+\begin{itemize}
+\item using the parser as in PFIM
+\item using a function(time, modelParameters, armsParameters, modelStructure)
+\item providing a differential equation function(time, states, modelParameters, armsParameters)
+\item providing ODE including partial derivatives for faster computation
+\end{itemize}
+
+\subsection{Deriving the sensitivities to parameters}
+As mentioned before
+the code includes the possibility to derive the sensitivities from a parsed model (as in PFIM).
+model.sensNum derives the partial derivatives numerically using the Jacobian-function.
+model.sensJac solves a system of ODEs that simultaneously derives the ODE solution and its partial derivative (huge speedup but needs a mathematically skilled person and some patience to set up for a specific example).
+
+\subsection{Arms, groups, doses, etc.}
+I wanted flexibility and maybe tried to get too much of it.
+{\bf Currently no covariates can be specified} (which would also distinguish two arms or subgroups).
+But doses and design decisions, etc. can be passed through the program to obtain different protocols or design layouts, dosing regimens, etc. for different arms (it is just a list of parameters passed through to the model function).
+
+For doses in ODE models I use the nice functionality of {\it deSolve} to specify specific times at which the state vector can be updated, for instance by adding a dose to compartment one or four or \dots
+
+\subsection{PFIM}
+{\bf Currently no IOV is incorporated} which means that I just managed the first steps, but did not have sufficient time to investigate how to encode the IOV clean and modular.
+Additionally, most of the designs investigated by me an co-workers so far were parallel designs.
+
+The original PFIM code did not make use of the fact that almost all matrices involved are symmetric matrices: some easy simplifications for speedup and numerical robustness are available.
+Also, one should not use \verb!solve(var)! to obtain the inverse of the variance matrix (I think Doug mentioned that as well).
+I use 
+\begin{verbatim}
+mEigen <- eigen(var, symmetric=T)
+invvar <- tcrossprod(mEigen$vectors %*% diag(1/mEigen$values), mEigen$vectors)
+\end{verbatim}
+This might not be the optimal solution, but it is more robust than using solve especially when the example is close to singular (I cannot remember if Cholesky would be happy about a singular matrix).
+
+\subsection{Optimisation}
+{bf Currently no optimization is included}.
+Often we are more interested in an approximation of the expected standard errors of parameter estimates for a given design than in fiddling around with the time points of the samples.

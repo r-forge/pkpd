@@ -1,0 +1,23 @@
+\section{Some possible speedups (without using C-code) and numerical improvements}
+\subsection{Jacobian vs Hessian}
+The main speedup between PFIM and myPFIMv2 is that for calculating the numerical sensitivities (model.sensNum) I use the function \verb!jacobian()! from the package {\it numDeriv}.
+This derives all sensitivities within one function call!
+In the original PFIM the function \verb!fdHess()$gradient! from the package {\it nlme} which first derives the Hessian and then the gradient is approximated. 
+Additionally this is done per time-point so for many sampling times this is very time consuming.
+
+
+\subsection{Parallel solving of ODE and sensitivities}
+As mentioned before: with some mathematics one can get a 100-fold speedup regarding solution of the sensitivities, but it needs some patience as well.
+See examples model.defaultDEjacY and model.sensJac for details.
+
+\subsection{invvar via eigendecomposition}
+As described above one should avoid deriving inverse matrices at all.
+I currently still derive the inverse, but as a pseudo-inverse using eigendecomposition.
+This provides much more robust results (and no crash of the program after 20 minutes of calculation\dots)
+
+\subsection{Use of symmetries when deriving PFIM}
+Almost all matrices used in the model.fish.bloc function are symmetrical.
+This should be used to speed up the computation (only minor improvements as matrices are small) and also to increase numerical accuracy (avoid divisions, etc.)
+
+The main change here was that as mentioned before the trace of a matrix multiplication of symmetric matrices can be derived by the sum of their element-wise product, i.e.,
+\verb!sum(diag(A %*% B)) == sum(A * B)!
