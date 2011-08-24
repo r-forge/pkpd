@@ -1,0 +1,17 @@
+formED<-function(t,y,p){
+V<-p[1]
+Vm<-p[2]
+km<-p[3]
+Rin<-p[4]
+kout<-p[5]
+C50<-p[6]
+pk<-y[1:1]
+pd<-y[2:2]
+conc<-y[1]
+if(t<=1){
+dpk1<-(100/(1*V))+(-Vm)*pk[1]/(km*V+pk[1])}
+else{
+dpk1<-(-Vm)*pk[1]/(km*V+pk[1])}
+dpd1<-Rin*(1-(conc)/(conc+C50))-kout*pd[1]
+return(list(c(dpk1,dpd1),c(pk[1],pd[1])))
+}
