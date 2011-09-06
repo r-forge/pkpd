@@ -18,7 +18,47 @@ subexpr <- function(expr, nm, sub)
     for (j in 2:length(expr)) expr[[j]] <- subexpr(expr[[j]], nm, sub)
     expr
 }
-    
+
+##' Return a formula for the one-compartment PK model with linear
+##' elimination according to the administration form and the dosage pattern.
+##' 
+##' @title Expressions for one-compartment PK models with linear elimination
+##'
+##' @param admin form of administration of the drug, one of
+##'    \code{"bolus"}, \code{"infusion"} or \code{"oral"}.  Defaults to
+##     \code{"bolus"}. 
+##' @param dosage form of dosage, one of \code{"sd"} (single dose),
+##'    \code{"md"} (multiple, equally-spaced doses) and \code{"ss"}
+##'    (steady-state).  Defaults to \code{"sd"}.
+##' @param subst a list of formulas of substitutions to perform
+##' @return a formula
+##' @examples
+##' ## single-dose oral administration
+##' PK1expr("oral", "sd")
+PK1expr <- function(admin=c("bolus", "infusion", "oral"),
+                    dosage=c("sd", "md", "ss"), subst=list()) {
+    frm <- list(bolus =
+                list(sd = ~dose * exp(-k * t) / V,
+                     md = ~(dose/V) * ((1-exp(-N*k*tau))/(1-exp(-k*tau))) * exp(-k*(t-(N-1)*tau)),
+                     ss = ~(dose/V)/(1-exp(-k*tau))*(exp(-k*(t-(TimeSS))))),
+                infusion =
+                list(),
+                oral =
+                list(sd = ~(dose/V) * (ka/(ka-k)) * (exp(-k*t)-exp(-ka*t)),
+                     md = ~(dose/V) * (ka/(ka-k)) * (exp(-k*(t-(N-1)*tau))*(1-exp(-N*k*tau)) /
+                                                     (1-exp(-k*tau))-exp(-ka*(t-(N-1)*tau)) *
+                                                     (1-exp(-N*ka*tau))/(1-exp(-ka*tau))),
+                     ss = ~(dose/V) * (ka/(ka-k)) * (exp(-k*(t-TimeSS))/(1-exp(-k*tau))-
+                                                     exp(-ka*(t-TimeSS))/(1-exp(-ka*tau))))
+                )[[match.arg(admin)]][[match.arg(dosage)]]
+    for (i in seq_along(subst)) {
+        stopifnot(class(subfrm <- eval(subst[[i]])) == "formula",
+                  is.name(subfrm[[2]]))
+        frm <- subexpr(frm, subfrm[[2]], as.expression(subfrm[[3]]))
+    }
+    frm
+}    
+
 ##' Create a model function with gradient evaluation for a
 ##' one-compartment model according to the form of administration of
 ##' the drug after performing any substitutions given. 
@@ -30,38 +70,25 @@ subexpr <- function(expr, nm, sub)
 ##' 
 ##' @title One-compartment PK models with linear elimination
 ##'
-##' @param admin form of administration of the drug, a character value
-##'    used to index the list \code{forms} defined in the function.
+##' @param admin form of administration of the drug, one of
+##'    \code{"bolus"}, \code{"infusion"} or \code{"oral"}.  Defaults to
+##     \code{"bolus"}. 
+##' @param dosage form of dosage, one of \code{"sd"} (single dose),
+##'    \code{"md"} (multiple, equally-spaced doses) and \code{"ss"}
+##'    (steady-state).  Defaults to \code{"sd"}.
 ##' @param subst a list of formulas of substitutions to perform
-##' @param formulaOnly logical - when TRUE the formula only is returned
-##'
-##' @return a model function with gradient evaluation unless
-##'    \code{formulaOnly} is \code{TRUE}
+##' @return a byte-compiled model function with gradient evaluation 
 ##'
 ##' @examples
-##' PK1cmpt("bolus", formulaOnly=TRUE)  # simplest usage
-##'    ## return a function with substitutions
-##' PK1cmpt("bolus", list(k ~ Cl/V, Cl ~ exp(lCl), V ~ exp(lV)))
+##' ## return a function with substitutions
+##' PK1cmpt("bolus", "sd", list(k ~ Cl/V, Cl ~ exp(lCl), V ~ exp(lV)))
 ##'
-PK1cmpt <- function(admin, subst=list(), formulaOnly=FALSE) {
-    stopifnot(is.character(admin), is.list(subst))
-    forms <- list(bolus = ~dose * exp(-k * t) / V,
-                  mbolus = ~(dose/V) * ((1-exp(-N*k*tau))/(1-exp(-k*tau))) * exp(-k*(t-(N-1)*tau)),
-                  ssbolus = ~(dose/V)/(1-exp(-k*tau))*(exp(-k*(t-(TimeSS)))),
-                  oral = ~(dose/V) * (ka/(ka-k)) * (exp(-k*t)-exp(-ka*t)), # single oral dose
-                  moral = ~ (dose/V) * (ka/(ka-k)) * # multiple oral doses
-                  (exp(-k*(t-(N-1)*tau))*(1-exp(-N*k*tau)) /
-                   (1-exp(-k*tau))-exp(-ka*(t-(N-1)*tau))*(1-exp(-N*ka*tau))/(1-exp(-ka*tau))),
-                  ssoral = ~ (dose/V) * (ka/(ka-k)) * (exp(-k*(t-TimeSS))/(1-exp(-k*tau))-
-                                                       exp(-ka*(t-TimeSS))/(1-exp(-ka*tau))))
-    frm <- forms[[admin]]
-    for (i in seq_along(subst)) {
-        stopifnot(class(subfrm <- eval(subst[[i]])) == "formula",
-                  is.name(subfrm[[2]]))
-        frm <- subexpr(frm, subfrm[[2]], as.expression(subfrm[[3]]))
-    }
-    if (formulaOnly) return(frm)
-    pnms <- setdiff(all.vars(frm), c("dose", "t", "N", "tau", "TimeSS"))
-    deriv(frm, pnms, c("dose", "t", pnms))
+PK1cmpt <- function(admin=c("bolus", "infusion", "oral"),
+                    dosage=c("sd", "md", "ss"),
+                    subst=list()) {
+    frm <- PK1expr(admin, dosage, subst)
+    covariates <- c("dose", "t",
+                    list(sd=character(0), md=c("N", "tau"), ss=c("TimeSS", "tau"))[[dosage]])
+    pnms <- setdiff(all.vars(frm), covariates)
+    cmpfun(deriv(frm, pnms, c(covariates, pnms)))
 }
-
