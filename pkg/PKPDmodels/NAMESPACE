@@ -1,0 +1,2 @@
+importFrom("compiler", cmpfun)
+export(PK1expr,PK1cmpt)
