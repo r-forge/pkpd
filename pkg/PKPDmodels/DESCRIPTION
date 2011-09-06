@@ -1,12 +1,13 @@
 Package: PKPDmodels
-Maintainer: Douglas Bates <Bates@R-project.org>
-License: GPL(>= 2)
 Title: Pharmacokinetic/pharmacodynamic models
 Type: Package
-LazyLoad: yes
+Version: 0.2
+Date: 2011-09-06
 Author: Anne Dubois, Julie Bertand, France Mentre and Douglas Bates
 Description: Provides functions to evaluate common
     pharmacokinetic/pharmacodynamic models and their gradients.
-Version: 0.1
-Date: 2011-08-23
-Collate: 'PKPDmodels.R'
+Imports: compiler
+Maintainer: Douglas Bates <Bates@R-project.org>
+License: GPL(>= 2)
+LazyLoad: yes
+
