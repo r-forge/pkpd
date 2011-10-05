@@ -1,8 +1,8 @@
 Package: PKPDmodels
 Title: Pharmacokinetic/pharmacodynamic models
 Type: Package
-Version: 0.2
-Date: 2011-09-06
+Version: 0.3
+Date: 2011-10-05
 Author: Anne Dubois, Julie Bertand, France Mentre and Douglas Bates
 Description: Provides functions to evaluate common
     pharmacokinetic/pharmacodynamic models and their gradients.
