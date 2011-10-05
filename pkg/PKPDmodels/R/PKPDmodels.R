@@ -38,7 +38,7 @@ subexpr <- function(expr, nm, sub)
 PK1expr <- function(admin=c("bolus", "infusion", "oral"),
                     dosage=c("sd", "md", "ss"), subst=list()) {
     frm <- list(bolus =
-                list(sd = ~dose * exp(-k * t) / V,
+                list(sd = ~ dose * exp(-k * t) / V,
                      md = ~(dose/V) * ((1-exp(-N*k*tau))/(1-exp(-k*tau))) * exp(-k*(t-(N-1)*tau)),
                      ss = ~(dose/V)/(1-exp(-k*tau))*(exp(-k*(t-(TimeSS))))),
                 infusion =
@@ -77,6 +77,9 @@ PK1expr <- function(admin=c("bolus", "infusion", "oral"),
 ##'    \code{"md"} (multiple, equally-spaced doses) and \code{"ss"}
 ##'    (steady-state).  Defaults to \code{"sd"}.
 ##' @param subst a list of formulas of substitutions to perform
+##' @param hessian a logical value indicating whether the second
+##'    derivatives should be calculated and incorporated in the return
+##'    value. 
 ##' @return a byte-compiled model function with gradient evaluation 
 ##'
 ##' @examples
@@ -85,10 +88,11 @@ PK1expr <- function(admin=c("bolus", "infusion", "oral"),
 ##'
 PK1cmpt <- function(admin=c("bolus", "infusion", "oral"),
                     dosage=c("sd", "md", "ss"),
-                    subst=list()) {
-    frm <- PK1expr(admin, dosage, subst)
+                    subst=list(), hessian=FALSE) {
+    frm <- PK1expr(match.arg(admin), match.arg(dosage), subst)
     covariates <- c("dose", "t",
-                    list(sd=character(0), md=c("N", "tau"), ss=c("TimeSS", "tau"))[[dosage]])
+                    list(sd=character(0), md=c("N", "tau"),
+                         ss=c("TimeSS", "tau"))[[dosage]])
     pnms <- setdiff(all.vars(frm), covariates)
-    cmpfun(deriv(frm, pnms, c(covariates, pnms)))
+    cmpfun(deriv(frm, pnms, c(covariates, pnms), hessian=hessian))
 }
