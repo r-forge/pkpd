@@ -39,17 +39,34 @@ PK1expr <- function(admin=c("bolus", "infusion", "oral"),
                     dosage=c("sd", "md", "ss"), subst=list()) {
     frm <- list(bolus =
                 list(sd = ~ dose * exp(-k * t) / V,
-                     md = ~(dose/V) * ((1-exp(-N*k*tau))/(1-exp(-k*tau))) * exp(-k*(t-(N-1)*tau)),
-                     ss = ~(dose/V)/(1-exp(-k*tau))*(exp(-k*(t-(TimeSS))))),
+
+                     md = ~(dose/V) * ((1-exp(-N*k*tau))/(1-exp(-k*tau))) *
+                     exp(-k*(t-(N-1)*tau)),
+
+                     ss = ~(dose/V)/(1-exp(-k*tau))*(exp(-k*(t-(TimeSS))))
+                     ),
                 infusion =
-                list(),
+                list(sd = ~(dose/Tinf) / (k*V)(1-exp(-k*TInf))*(exp(-k*(t-TInf))),
+
+                     md = ~(dose/Tinf) / (k*V) * (1-exp(-k*TInf))*
+                     (1-exp(-N * k * tau)) / (1-exp(-k * tau)) *
+                     (exp(-k * (t - (N-1)*tau - TInf))),
+
+                     ss = ~(dose/Tinf) /(k*V)*(1-exp(-k * TInf)) *
+                     exp(-k * (t-TimeSS-TInf))/(1-exp(-k*tau))
+                     ),
                 oral =
                 list(sd = ~(dose/V) * (ka/(ka-k)) * (exp(-k*t)-exp(-ka*t)),
-                     md = ~(dose/V) * (ka/(ka-k)) * (exp(-k*(t-(N-1)*tau))*(1-exp(-N*k*tau)) /
-                                                     (1-exp(-k*tau))-exp(-ka*(t-(N-1)*tau)) *
-                                                     (1-exp(-N*ka*tau))/(1-exp(-ka*tau))),
-                     ss = ~(dose/V) * (ka/(ka-k)) * (exp(-k*(t-TimeSS))/(1-exp(-k*tau))-
-                                                     exp(-ka*(t-TimeSS))/(1-exp(-ka*tau))))
+
+                     md = ~(dose/V) * (ka/(ka-k)) *
+                     (exp(-k*(t-(N-1)*tau))*(1-exp(-N*k*tau)) /
+                      (1-exp(-k*tau))-exp(-ka*(t-(N-1)*tau)) *
+                      (1-exp(-N*ka*tau))/(1-exp(-ka*tau))),
+
+                     ss = ~(dose/V) * (ka/(ka-k)) *
+                     (exp(-k*(t-TimeSS))/(1-exp(-k*tau))-
+                      exp(-ka*(t-TimeSS))/(1-exp(-ka*tau))))
+
                 )[[match.arg(admin)]][[match.arg(dosage)]]
     for (i in seq_along(subst)) {
         stopifnot(class(subfrm <- eval(subst[[i]])) == "formula",
@@ -59,8 +76,8 @@ PK1expr <- function(admin=c("bolus", "infusion", "oral"),
     frm
 }    
 
-##' Create a model function with gradient evaluation for a
-##' one-compartment model according to the form of administration of
+##' Create a model function with gradient evaluation (and, optionally,
+##' Hessian evaluation) for a ##' one-compartment model according to the form of administration of
 ##' the drug after performing any substitutions given. 
 ##' 
 ##'
@@ -92,7 +109,7 @@ PK1cmpt <- function(admin=c("bolus", "infusion", "oral"),
     frm <- PK1expr(match.arg(admin), match.arg(dosage), subst)
     covariates <- c("dose", "t",
                     list(sd=character(0), md=c("N", "tau"),
-                         ss=c("TimeSS", "tau"))[[dosage]])
+                         ss=c("TimeSS", "N", "tau"))[[dosage]])
     pnms <- setdiff(all.vars(frm), covariates)
     cmpfun(deriv(frm, pnms, c(covariates, pnms), hessian=hessian))
 }
