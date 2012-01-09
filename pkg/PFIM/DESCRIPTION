@@ -1,0 +1,15 @@
+Package: PFIM
+Type: Package
+Title: Pharmacokinetic/Pharmacodynamic Fisher Information Matrix
+Version: 0.1.5
+Date: 2012-01-xx
+Author: Martin Fink, France Mentre, Emmanuelle Comets, Douglas Bates and others
+Maintainer: <bates@stat.wisc.edu>
+Description: Evaluate or optimize the Fisher Information Matrix
+ for a population pharmacokinetic/pharmacodynamic model.
+Depends: deSolve, methods, nlme, numDeriv, PKPDmodels
+LinkingTo: Rcpp, RcppEigen
+Suggests: Matrix
+License: GPL(>= 2)
+LazyLoad: yes
+LazyData: yes

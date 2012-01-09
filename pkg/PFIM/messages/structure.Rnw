@@ -1,0 +1,164 @@
+\documentclass[notitlepage,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{Sweave,amsmath,amsfonts,bm}
+\DefineVerbatimEnvironment{Sinput}{Verbatim}
+{formatcom={\vspace{-1ex}},fontshape=sl,
+  fontfamily=courier,fontseries=b, fontsize=\footnotesize}
+\DefineVerbatimEnvironment{Soutput}{Verbatim}
+{formatcom={\vspace{-1ex}},fontfamily=courier,fontseries=b,%
+  fontsize=\footnotesize}
+\title{Structure for specifying the model}
+\author{Douglas Bates}
+\date{2011-10-04 Tue}
+
+\begin{document}
+\SweaveOpts{engine=R,eps=FALSE,pdf=TRUE,strip.white=true,keep.source=TRUE}
+\SweaveOpts{include=FALSE}
+\maketitle
+\section{Current Structure}
+\label{sec:current}
+
+
+I will need to go through more examples but I see the current structure as 
+<<current>>=
+AE1 <-
+    list(PFIMmodel=function(tim, parModel, parArms, model)
+     {
+         V <- parModel[1]
+         k <- parModel[2]
+         Alin <- parModel[3]
+         dose <- parArms[1]
+         nDoses <- parArms[2]
+         
+         PK <- 0
+         for (idx in 0:(nDoses-1)) {
+             PK <- PK + (tim>=idx*24)*dose/V*(exp(-k*(tim-idx*24)))
+         }
+         PD <- Alin*PK
+         
+         cbind(PK,PD)
+     },
+         Type='AE',
+         parModelName=c('V','k','Alin'),
+         parModel=c(4.5,0.5,3),
+         parModelVar=c(0.2,0.4,0.15),
+         parModelVarType='exp',
+         parObsName=c('Conc','Effect'),
+         parObsErr=list(c(0.3,0.5), c(0,0.3)),
+         parObsTimes=
+         list(list(c(0.5,1,2,4,8,12,24,48),
+                   c(0,4,8,12,24,48)),
+              list(c(0.5,1,2,4,8,12,24),
+                   c(0,4,8,12,24)),
+              list(c(0.5,1,4,12,23.9,47.9,71.9),
+                   c(0,4,12,23.9,47.9,71.9))),
+         parArmsName=c('dose','nDoses'),
+         parArms=list(c(100,30,5), c(1,1,3)),
+         ArmsName=list('100 mg','30 mg','10 mg'),
+         TimeName='Time (hr)',
+         tRange=c(0,72),
+         mpOpt=list()
+         )
+@ 
+\section{Proposed Changes}
+\label{sec:proposed}
+
+I would change the model parameters to a numeric matrix with named
+rows (or columns, whichever made more sense).  For rows it would look like
+<<modelParsMatrix>>=
+(parModel <- matrix(c(4.5, 0.5, 3, 0.2, 0.4, 0.15), ncol=2L,
+                   dimnames=list(c('V','k','Alin'), c('val', 'var'))))
+@ 
+You obtain the values and the variances as named vectors by extracting
+the column and specifying \texttt{drop} to be \texttt{TRUE}.
+<<extractMatrix>>=
+parModel[, 'val', drop=TRUE]
+@ 
+Alternatively, the model parameters could be specified as a data frame
+with row names.
+<<modelParsDataFrame>>=
+(parModel <- data.frame(value=c(4.5,0.5,3), variance=c(0.2,0.4,0.15),
+                        row.names=c('V','k','Alin')))
+@ 
+Then it is even easier to extract the values and the variances except
+that you need to assign the names separately.
+<<dfextract>>=
+pars <- parModel$value
+names(pars) <- row.names(parModel)
+pars
+@ %$
+A middle ground is to use the data.frame structure and convert it to a
+matrix before extracting
+<<dfextract2>>=
+data.matrix(parModel)[, 'value', drop=TRUE]
+@ 
+
+The observation error structure could be a named list or another
+matrix or a data frame.  Probably
+<<obsErr>>=
+(parObsErr <- data.frame(Conc=c(0.3,0.5), Effect=c(0,0.3)))
+@ 
+
+The arms specification could be another data frame
+<<arms>>=
+(Arms <- data.frame(dose=c(100,30,5), nDoses=c(1,1,3),
+                    row.names=c('100 mg','30 mg','10 mg')))
+@ 
+(By the way, I got this example from the file
+\texttt{model.defaultAEfun.R} and either the last name or the last
+dose is incorrect.
+
+\section{Summary}
+\label{sec:summary}
+
+So I would change the model specification to
+<<newspec>>=
+AE1 <-
+    list(PFIMmodel=function(tim, parModel, parArms, model)
+     {
+         V <- parModel[1]
+         k <- parModel[2]
+         Alin <- parModel[3]
+         dose <- parArms[1]
+         nDoses <- parArms[2]
+         
+         PK <- 0
+         for (idx in 0:(nDoses-1)) {
+             PK <- PK + (tim>=idx*24)*dose/V*(exp(-k*(tim-idx*24)))
+         }
+         PD <- Alin*PK
+         
+         cbind(PK,PD)
+     },
+         Type='AE',
+         parModel=
+         data.frame(value=c(4.5,0.5,3),
+                    variance=c(0.2,0.4,0.15),
+                    row.names=c('V','k','Alin')),
+         parModelVarType='exp',
+         parObsErr=
+         data.frame(Conc=c(0.3,0.5),
+                    Effect=c(0,0.3)),
+         Arms=
+         data.frame(dose=c(100,30,5),
+                    nDoses=c(1,1,3),
+                    row.names=c('100 mg','30 mg','10 mg')),
+         parObsTimes=
+         list(list(c(0.5,1,2,4,8,12,24,48),
+                   c(0,4,8,12,24,48)),
+              list(c(0.5,1,2,4,8,12,24),
+                   c(0,4,8,12,24)),
+              list(c(0.5,1,4,12,23.9,47.9,71.9),
+                   c(0,4,12,23.9,47.9,71.9))),
+         TimeName='Time (hr)',
+         tRange=c(0,72),
+         mpOpt=list()
+         )
+@ 
+
+I will look at other examples.  In the meantime, do either of you have
+comments?
+\end{document}
+
+

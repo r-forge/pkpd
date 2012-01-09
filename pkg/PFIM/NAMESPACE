@@ -1,0 +1,13 @@
+useDynLib(PFIM, .registration=TRUE)
+
+export(PFIMmod,
+       popProt,
+       readMatElem,
+       readPFIM,
+       sensitivity)
+exportClasses(popProt)
+
+S3method(solve, PFIMmodAE)
+S3method(solve, PFIMmodDE)
+S3method(sensitivity, PFIMmodAE)
+S3method(sensitivity, PFIMmodDE)
