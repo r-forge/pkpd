@@ -3,24 +3,22 @@
 \title{Expressions for PK models with linear elimination}
 \usage{
   PKexpr(admin = c("bolus", "infusion", "oral"),
-    dosage = c("sd", "md", "ss"),
-    cpt = c("one", "two", "three"), subst = list())
+    dosage = c("sd", "md", "ss"), subst = list(), cpt = 1L)
 }
 \arguments{
   \item{admin}{form of administration of the drug, one of
   \code{"bolus"}, \code{"infusion"} or \code{"oral"}.
-  Defaults to}
+  Defaults to \code{"bolus"}.}
 
   \item{dosage}{form of dosage, one of \code{"sd"} (single
   dose), \code{"md"} (multiple, equally-spaced doses) and
   \code{"ss"} (steady-state).  Defaults to \code{"sd"}.}
 
-  \item{cpt}{number of model compartments, one of
-  \code{"one"}, \code{"two"} or \code{"three"}.  Defaults
-  to \code{"one"}.}
-
   \item{subst}{a list of formulas of substitutions to
   perform}
+
+  \item{cpt}{scalar integer - the number of model
+  compartments.}
 }
 \value{
   a formula
@@ -32,6 +30,6 @@
 }
 \examples{
 ## single-dose oral administration
-PKexpr("oral", "sd", "one")
+PKexpr("oral", "sd")
 }
 

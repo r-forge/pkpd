@@ -3,25 +3,23 @@
 \title{PK models with linear elimination}
 \usage{
   PKmod(admin = c("bolus", "infusion", "oral"),
-    dosage = c("sd", "md", "ss"),
-    cpt = c("one", "two", "three"), subst = list(),
+    dosage = c("sd", "md", "ss"), subst = list(), cpt = 1L,
     hessian = FALSE)
 }
 \arguments{
   \item{admin}{form of administration of the drug, one of
   \code{"bolus"}, \code{"infusion"} or \code{"oral"}.
-  Defaults to}
+  Defaults to \code{"bolus"}.}
 
-  \item{dosage}{form of dosage, one of \code{"sd"} (single
-  dose), \code{"md"} (multiple, equally-spaced doses) and
+  \item{dosage}{type of dosage of the drug, one of
+  \code{"sd"} (single dose), \code{"md"} (multiple dose) or
   \code{"ss"} (steady-state).  Defaults to \code{"sd"}.}
-
-  \item{cpt}{number of model compartments, one of
-  \code{"one"}, \code{"two"} or \code{"three"}.  Defaults
-  to \code{"one"}.}
 
   \item{subst}{a list of formulas of substitutions to
   perform}
+
+  \item{cpt}{scalar integer - the number of model
+  compartments.}
 
   \item{hessian}{a logical value indicating whether the
   second derivatives should be calculated and incorporated
@@ -44,6 +42,6 @@
 }
 \examples{
 ## return a function with substitutions
-PKmod("bolus", "sd", "one", list(k ~ Cl/V, Cl ~ exp(lCl), V ~ exp(lV)))
+PKmod("bolus", "sd", list(k ~ Cl/V, Cl ~ exp(lCl), V ~ exp(lV)))
 }
 
