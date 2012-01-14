@@ -131,9 +131,9 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral"),
 ##' PKmod("bolus", "sd", "one", list(k ~ Cl/V, Cl ~ exp(lCl), V ~ exp(lV)))
 ##'
 PKmod <- function(admin=c("bolus", "infusion", "oral"),
-                    dosage=c("sd", "md", "ss"),
-                    cpt=c("one", "two", "three"),
-                    subst=list(), hessian=FALSE) {
+                  dosage=c("sd", "md", "ss"),
+                  cpt=c("one", "two", "three"),
+                  subst=list(), hessian=FALSE) {
     frm <- PKexpr(match.arg(admin), match.arg(dosage), match.arg(cpt), subst)
     covariates <- c(list(sd=list("dose", "t"),md=c("dose","t","TInf"),
                          ss=list("dose", "t"))[[admin]],
