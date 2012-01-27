@@ -72,7 +72,10 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral"),
                      ),
                 list(                   # 2 compartment
                      bolus =
-                     list(sd = ~(dose/V) * (A*exp(-alpha1 * t) + B*exp(-alpha2 * t)),
+                     list(sd = ~(dose/V) * (
+                                            (2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))-k21)/(2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))-(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2)*exp(-2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k)) * t) + ((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2-k21)/((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2-2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k)))*exp(-((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2) * t)
+                                            ),
+                                            #A*exp(-alpha1 * t) + B*exp(-alpha2 * t)),
                           
                           md = ~(dose/V) * (((1-A*exp(-N*alpha1*tau))/(1-A*exp(-alpha1*tau))) *
                                             A*exp(-alpha1*(t-(N-1)*tau))
@@ -86,7 +89,7 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral"),
                      oral =list()
                      ),
                 list()                  # 3 compartment (not yet available)
-                )[[cpt]][[match.arg(admin)]][[match.arg(dosage)]]
+                )[[as.integer(cpt)[1]]][[match.arg(admin)]][[match.arg(dosage)]]
                     
     for (i in seq_along(subst)) {
         stopifnot(class(subfrm <- eval(subst[[i]])) == "formula",
@@ -145,7 +148,7 @@ PKmod <- function(admin  = c("bolus", "infusion", "oral"),
                             oral=
                             list(sd=c("dose", "t"),
                                  md=c("dose","t","TInf"),
-                                 ss=c("dose", "t"))))[[cpt]][[admin]][[dosage]]
+                                 ss=c("dose", "t"))))[[admin]][[dosage]]
     pnms <- setdiff(all.vars(frm), covariates)
     cmpfun(deriv(frm, pnms, c(covariates, pnms), hessian=hessian))
 }
