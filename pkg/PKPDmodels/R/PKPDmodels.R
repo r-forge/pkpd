@@ -89,7 +89,7 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral"),
                      oral =list()
                      ),
                 list()                  # 3 compartment (not yet available)
-                )[[as.integer(cpt)[1]]][[match.arg(admin)]][[match.arg(dosage)]]
+                )[[cpt]][[match.arg(admin)]][[match.arg(dosage)]]
                     
     for (i in seq_along(subst)) {
         stopifnot(class(subfrm <- eval(subst[[i]])) == "formula",
