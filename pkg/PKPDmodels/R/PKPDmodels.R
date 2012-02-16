@@ -1,3 +1,6 @@
+##' @importFrom compiler cmpfun
+NULL
+
 ##' Substitute the expression \code{sub} for the name \code{nm} in
 ##' \code{expr} by walking the tree.
 ##'
@@ -19,8 +22,9 @@ subexpr <- function(expr, nm, sub)
     expr
 }
 
-##' Return a formula for the PK model with linear
-##' elimination according to the number of compartments, the administration form and the dosage pattern.
+##' Return a formula for the PK model with linear elimination
+##' according to the number of compartments, the administration path
+##' and the dosage pattern.
 ##' 
 ##' @title Expressions for PK models with linear elimination
 ##'
@@ -36,6 +40,7 @@ subexpr <- function(expr, nm, sub)
 ##' @examples
 ##' ## single-dose oral administration
 ##' PKexpr("oral", "sd")
+##' @export
 PKexpr <- function(admin=c("bolus", "infusion", "oral"),
                    dosage=c("sd", "md", "ss"),
                    subst=list(),
@@ -128,6 +133,7 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral"),
 ##' ## return a function with substitutions
 ##' PKmod("bolus", "sd", list(k ~ Cl/V, Cl ~ exp(lCl), V ~ exp(lV)))
 ##'
+##' @export
 PKmod <- function(admin  = c("bolus", "infusion", "oral"),
                   dosage = c("sd", "md", "ss"),
                   subst  = list(),
@@ -137,7 +143,8 @@ PKmod <- function(admin  = c("bolus", "infusion", "oral"),
     admin  <- match.arg(admin)
     dosage <- match.arg(dosage)
     frm    <- PKexpr(admin, dosage, subst, cpt)
-    covariates <- list(list(bolus=
+    covariates <- list(                 # 1 cpt
+                       list(bolus=
                             list(sd=c("dose", "t"),
                                  md=c("dose","t","TInf"),
                                  ss=c("dose", "t")),
@@ -148,7 +155,9 @@ PKmod <- function(admin  = c("bolus", "infusion", "oral"),
                             oral=
                             list(sd=c("dose", "t"),
                                  md=c("dose","t","TInf"),
-                                 ss=c("dose", "t"))))[[admin]][[dosage]]
+                                 ss=c("dose", "t"))
+                            )
+                       )[[cpt]][[admin]][[dosage]]
     pnms <- setdiff(all.vars(frm), covariates)
     cmpfun(deriv(frm, pnms, c(covariates, pnms), hessian=hessian))
 }

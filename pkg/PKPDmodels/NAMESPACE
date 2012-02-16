@@ -1,2 +1,3 @@
-importFrom("compiler", cmpfun)
-export(PKexpr,PKmod)
+export(PKexpr)
+export(PKmod)
+importFrom(compiler,cmpfun)
