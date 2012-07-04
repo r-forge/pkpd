@@ -77,10 +77,10 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral"),
                      ),
                 list(                   # 2 compartment
                      bolus =
-                     list(sd = ~(dose/V) * (
-                                            (2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))-k21)/(2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))-(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2)*exp(-2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k)) * t) + ((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2-k21)/((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2-2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k)))*exp(-((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2) * t)
-                                            ),
-                                            #A*exp(-alpha1 * t) + B*exp(-alpha2 * t)),
+                     list(sd = ~(dose/V) * (A*exp(-alpha1 * t) + B*exp(-alpha2 * t)),
+                                            #(2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))-k21)/(2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))-(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2)*exp(-2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k)) * t) + ((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2-k21)/((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2-2*k21*k/(k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k)))*exp(-((k12+k21+k-sqrt((k12+k21+k)^2-4*k21*k))/2) * t)
+                                            #),
+                                            
                           
                           md = ~(dose/V) * (((1-A*exp(-N*alpha1*tau))/(1-A*exp(-alpha1*tau))) *
                                             A*exp(-alpha1*(t-(N-1)*tau))
