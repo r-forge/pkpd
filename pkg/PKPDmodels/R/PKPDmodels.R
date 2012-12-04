@@ -52,17 +52,22 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral","oralF"),
 
                           md = ~(dose/V) * ((1-exp(-N*Cl/V*tau))/(1-exp(-Cl/V*tau))) * exp(-Cl/V*(t-(N-1)*tau)),
 
-                          ss = ~(dose/V)/(1-exp(-Cl/V*tau))*(exp(-Cl/V*(t-(TimeSS))))
+                          ss = ~(dose/V)/(1-exp(-Cl/V*t))*(exp(-Cl/V*tau))
                           ),
                      infusion =
-                     list(sd = ~(dose/TInf) / (Cl/V*V)(1-exp(-Cl/V*TInf))*(exp(-Cl/V*(t-TInf))),
+                     list(sd = ~(dose/Tinf) / (Cl/V*V)*(exp(-Cl/V*(t-Tinf)*(t>Tinf))-exp(-Cl/V*t)),
                           
-                          md = ~(dose/TInf) / (Cl/V*V) * (1-exp(-Cl/V*TInf))*
-                          (1-exp(-N * Cl/V * tau)) / (1-exp(-Cl/V * tau)) *
-                          (exp(-Cl/V * (t - (N-1)*tau - TInf))),
+                          md = ~(
+                            (dose/Tinf) / (Cl/V*V)*(1-exp(-Cl/V*(t-(N-1)*tau)))+
+                              (dose/Tinf) / (Cl/V*V)*(exp(-Cl/V*(t-(N-2)*tau-Tinf))-exp(-Cl/V*(t-(N-2)*tau)))*(1-exp(-Cl/V*(N-2)*tau))/(1-exp(-Cl/V*tau))
+                              )*((t-(N-1)*tau)<Tinf)+
+                          ((dose/Tinf) / (Cl/V*V)*(exp(-Cl/V*(t-(N-1)*tau-Tinf))-exp(-Cl/V*(t-(N-1)*tau)))*(1-exp(-Cl/V*(N-1)*tau))/(1-exp(-Cl/V*tau)))*((t-(N-1)*tau)>=Tinf)
+                          ,
                           
-                          ss = ~(dose/TInf) /(Cl/V*V)*(1-exp(-Cl/V * TInf)) *
-                          exp(-Cl/V * (t-TimeSS-TInf))/(1-exp(-Cl/V*tau))
+                          ss = ~(
+                            (dose/Tinf) / (Cl/V*V)*(1-exp(-Cl/V*t)+
+                              exp(-Cl/V*tau)*(1-exp(-Cl/V*Tinf))*exp(-Cl/V*(t-Tinf))/(1-exp(-Cl/V*tau))))*(t<Tinf)+
+                                                     ((dose/Tinf) / (Cl/V*V)*(1-exp(-Cl/V*Tinf))*exp(-Cl/V*(t-Tinf))/(1-exp(-Cl/V*tau)))*(t>=Tinf)
                           ),
                      oral =
                      list(sd = ~(dose/V) * (ka/(ka-Cl/V)) * (exp(-Cl/V*t)-exp(-ka*t)),
@@ -71,8 +76,8 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral","oralF"),
                                                           (1-exp(-Cl/V*tau))-exp(-ka*(t-(N-1)*tau)) *
                                                           (1-exp(-N*ka*tau))/(1-exp(-ka*tau))),
                           
-                          ss = ~(dose/V) * (ka/(ka-Cl/V)) * (exp(-Cl/V*(t-TimeSS))/(1-exp(-Cl/V*tau)) -
-                                                          exp(-ka*(t-TimeSS))/(1-exp(-ka*tau)))
+                          ss = ~(dose/V) * (ka/(ka-Cl/V)) * (exp(-Cl/V*t)/(1-exp(-Cl/V*tau)) -
+                                                          exp(-ka*t)/(1-exp(-ka*tau)))
                           ),
                      oralF =
                        list(sd = ~(dose/(V/F)) * (ka/(ka-(Cl/F)/(V/F))) * (exp(-(Cl/F)/(V/F)*t)-exp(-ka*t)),
@@ -81,8 +86,8 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral","oralF"),
                               (1-exp(-(Cl/F)/(V/F)*tau))-exp(-ka*(t-(N-1)*tau)) *
                               (1-exp(-N*ka*tau))/(1-exp(-ka*tau))),
                             
-                            ss = ~(dose/(V/F)) * (ka/(ka-(Cl/F)/(V/F))) * (exp(-(Cl/F)/(V/F)*(t-TimeSS))/(1-exp(-(Cl/F)/(V/F)*tau)) -
-                              exp(-ka*(t-TimeSS))/(1-exp(-ka*tau)))
+                            ss = ~(dose/(V/F)) * (ka/(ka-(Cl/F)/(V/F))) * (exp(-(Cl/F)/(V/F)*t)/(1-exp(-(Cl/F)/(V/F)*tau)) -
+                              exp(-ka*(t))/(1-exp(-ka*tau)))
                             )
                      ),
                 list(                   # 2 compartment
@@ -95,21 +100,10 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral","oralF"),
                                             +((1-B*exp(-N*alpha2*tau))/(1-B*exp(-alpha2*tau))) *
                                             B*exp(-alpha2*(t-(N-1)*tau))),
                           
-                          ss = ~(dose/V)*((A*exp(-alpha1*(t-(TimeSS))))/(1-A*exp(-alpha1*tau))+
-                                          (B*exp(-alpha2*(t-(TimeSS))))/(1-B*exp(-alpha2*tau)))
+                          ss = ~(dose/V)*((A*exp(-alpha1*(t)))/(1-A*exp(-alpha1*tau))+
+                                          (B*exp(-alpha2*(t)))/(1-B*exp(-alpha2*tau)))
                           ),
-                     infusion =
-                       list(sd = ~(dose/V) * (A*exp(-alpha1 * t) + B*exp(-alpha2 * t)),
-                            
-                            
-                            md = ~(dose/V) * (((1-A*exp(-N*alpha1*tau))/(1-A*exp(-alpha1*tau))) *
-                              A*exp(-alpha1*(t-(N-1)*tau))
-                                              +((1-B*exp(-N*alpha2*tau))/(1-B*exp(-alpha2*tau))) *
-                                                B*exp(-alpha2*(t-(N-1)*tau))),
-                            
-                            ss = ~(dose/V)*((A*exp(-alpha1*(t-(TimeSS))))/(1-A*exp(-alpha1*tau))+
-                              (B*exp(-alpha2*(t-(TimeSS))))/(1-B*exp(-alpha2*tau)))
-                            ),
+                     infusion =list(),
                      oral =list(),
                      oralF =list()
                      ),
@@ -183,20 +177,20 @@ PKmod <- function(admin  = c("bolus", "infusion", "oral", "oralF"),
     frm    <- PKexpr(admin, dosage, subst, cpt)
     design.vars <- list(bolus=
                         list(sd=c("dose", "t"),
-                             md=c("dose","t","TInf"),
-                             ss=c("dose", "t")),
+                             md=c("dose","t","N","tau"),
+                             ss=c("dose", "t","tau")),
                         infusion=
-                        list(sd=character(0),
-                             md=c("N", "tau"),
-                             ss=c("TimeSS", "N", "tau")),
+                        list(sd=c("dose", "t","Tinf"),
+                             md=c("dose", "t","Tinf","N", "tau"),
+                             ss=c("dose", "t","Tinf", "tau")),
                         oral=
                         list(sd=c("dose", "t"),
-                             md=c("dose","t","TInf"),
-                             ss=c("dose", "t")),
+                             md=c("dose","t","N","tau"),
+                             ss=c("dose", "t","tau")),
                         oralF=
                           list(sd=c("dose", "t"),
-                               md=c("dose","t","TInf"),
-                               ss=c("dose", "t"))
+                               md=c("dose","t","N","tau"),
+                               ss=c("dose", "t","tau"))
                        )[[admin]][[dosage]]
     pnms <- setdiff(all.vars(frm), design.vars)
     cmpfun(deriv(frm, pnms, c(design.vars, pnms), hessian=hessian))
