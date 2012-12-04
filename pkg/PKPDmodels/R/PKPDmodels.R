@@ -61,7 +61,7 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral","oralF"),
                           (1-exp(-N * Cl/V * tau)) / (1-exp(-Cl/V * tau)) *
                           (exp(-Cl/V * (t - (N-1)*tau - TInf))),
                           
-                          ss = ~(dose/Tinf) /(Cl/V*V)*(1-exp(-Cl/V * TInf)) *
+                          ss = ~(dose/TInf) /(Cl/V*V)*(1-exp(-Cl/V * TInf)) *
                           exp(-Cl/V * (t-TimeSS-TInf))/(1-exp(-Cl/V*tau))
                           ),
                      oral =
@@ -98,13 +98,37 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral","oralF"),
                           ss = ~(dose/V)*((A*exp(-alpha1*(t-(TimeSS))))/(1-A*exp(-alpha1*tau))+
                                           (B*exp(-alpha2*(t-(TimeSS))))/(1-B*exp(-alpha2*tau)))
                           ),
-                     infusion =list(),
+                     infusion =
+                       list(sd = ~(dose/V) * (A*exp(-alpha1 * t) + B*exp(-alpha2 * t)),
+                            
+                            
+                            md = ~(dose/V) * (((1-A*exp(-N*alpha1*tau))/(1-A*exp(-alpha1*tau))) *
+                              A*exp(-alpha1*(t-(N-1)*tau))
+                                              +((1-B*exp(-N*alpha2*tau))/(1-B*exp(-alpha2*tau))) *
+                                                B*exp(-alpha2*(t-(N-1)*tau))),
+                            
+                            ss = ~(dose/V)*((A*exp(-alpha1*(t-(TimeSS))))/(1-A*exp(-alpha1*tau))+
+                              (B*exp(-alpha2*(t-(TimeSS))))/(1-B*exp(-alpha2*tau)))
+                            ),
                      oral =list(),
                      oralF =list()
                      ),
                 list()                  # 3 compartment (not yet available)
                 )[[cpt]][[match.arg(admin)]][[match.arg(dosage)]]
-                    
+    
+    if(cpt==2){
+      subst2<-list(A~(alpha1-k21)/(alpha1-alpha2),
+                   B~(alpha2-k21)/(alpha2-alpha1),
+                   alpha1~k21*k/alpha2,
+                   alpha2~1/2*(k12+k21+k-sqrt((k12+k21+k)**2-4*k21*k)))
+      for (i in seq_along(subst2)) {
+        subfrm <- eval(subst2[[i]])
+        frm <- subexpr(frm, subfrm[[2]], as.expression(subfrm[[3]]))
+      }
+      frm 
+    }
+    
+    
     for (i in seq_along(subst)) {
         stopifnot(class(subfrm <- eval(subst[[i]])) == "formula",
                   is.name(subfrm[[2]]))
@@ -141,6 +165,11 @@ PKexpr <- function(admin=c("bolus", "infusion", "oral","oralF"),
 ##' @examples
 ##' ## return a function with substitutions
 ##' PKmod("bolus", "sd", list(k ~ Cl/V, Cl ~ exp(lCl), V ~ exp(lV)))
+##' PKmod("bolus", "sd", list(A~(alpha1-k21)/(alpha1-alpha2),
+##'                           B~(alpha2-k21)/(alpha2-alpha1),
+##'                           alpha1~k21*k/alpha2,
+##'                           alpha2~1/2*(k12+k21+k-sqrt((k12+k21+k)**2-4*k21*k))),
+##'       cpt=2)
 ##'
 ##' @export
 PKmod <- function(admin  = c("bolus", "infusion", "oral", "oralF"),
